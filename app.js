@@ -1,7 +1,9 @@
+import 'dotenv/config'
 import express from "express";
 import bodyParser from "body-parser";
 import ejs from "ejs"
 import mongoose from "mongoose";
+import encrypt from "mongoose-encryption"
 
 
 const app = express();
@@ -14,14 +16,17 @@ mongoose.connect("mongodb://127.0.0.1:27017/userDB").then((response)=>{
   console.log(`MONGO DB IS CONNECTED at HOST ${response.connection.host}`)
 })
 
-const userSchema = {
+// **********************************************************
+const userSchema = new mongoose.Schema( {
   email : {
     type : String,
     unique : true
   },
   password : String
-}
+}) ;
+userSchema.plugin(encrypt,{secret : process.env.SECRET, encryptedFields : ["password"] })
 const User = new mongoose.model("User",userSchema)
+// **********************************************************
 
 //******************************************* Get
 app.get("/", (req, res) => {
@@ -41,7 +46,6 @@ app.get("/login", (req, res) => {
 //******************************************* Post
 
 app.post("/register", (req, res) => {
-
   const newUser = new User({
     email : req.body.username,
     password : req.body.password
@@ -58,18 +62,15 @@ app.post("/register", (req, res) => {
 })
 
 
-
-
-
 app.post("/login", (req, res) => {
   
   const username = req.body.username 
   const password = req.body.password ;
 
-  User.find({email : username, password : password})
+  User.findOne({email : username})
   .then((response)=>{
     console.log(response)
-    if(response.length)
+    if(response?.password == password)
     {
       res.render("secrets")
       console.log("SuccessFully Login")
@@ -80,15 +81,6 @@ app.post("/login", (req, res) => {
     }
   })
 });
-
-
-
-
-
-
-
-
-
 
 
 
